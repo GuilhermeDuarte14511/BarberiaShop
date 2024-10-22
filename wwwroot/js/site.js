@@ -73,6 +73,12 @@
         });
     }
 
+    // Exibir o toast de erro de login, se houver
+    if ($('#loginErrorToast').length > 0) {
+        var toastEl = new bootstrap.Toast(document.getElementById('loginErrorToast'));
+        toastEl.show();
+    }
+
     // Lógica do menuPrincipal
     if ($('#menuPrincipal').length > 0) {
         $('#historicoButton, #servicoButton').on('click', function (e) {

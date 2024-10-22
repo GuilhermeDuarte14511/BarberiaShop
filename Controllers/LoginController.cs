@@ -3,6 +3,7 @@ using BarberShop.Domain.Interfaces;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Mvc;
+using System;
 using System.Collections.Generic;
 using System.Security.Claims;
 using System.Threading.Tasks;
@@ -18,65 +19,79 @@ namespace BarberShopMVC.Controllers
             _clienteRepository = clienteRepository;
         }
 
-        // Exibe a tela de login
         [HttpGet]
         public IActionResult Login()
         {
-            return View(); // Retorna a view de login
+            return View();
         }
 
-        // Lida com o processo de login e autenticação do usuário
         [HttpPost]
         public async Task<IActionResult> Login(string phoneInput, string emailInput)
         {
-            string userInput = string.IsNullOrEmpty(phoneInput) ? emailInput : phoneInput;
-
-            if (string.IsNullOrEmpty(userInput))
+            try
             {
-                ModelState.AddModelError("", "Por favor, insira um telefone ou email válido.");
-                return View(); // Retorna à view de login em caso de erro
-            }
+                string userInput = string.IsNullOrEmpty(phoneInput) ? emailInput : phoneInput;
 
-            // Busca o cliente pelo email ou telefone
-            var cliente = await _clienteRepository.GetByEmailOrPhoneAsync(userInput);
-
-            if (cliente != null)
-            {
-                // Criando claims para armazenar informações do cliente
-                var claims = new List<Claim>
+                if (string.IsNullOrEmpty(userInput))
                 {
-                    new Claim(ClaimTypes.NameIdentifier, cliente.ClienteId.ToString()),
-                    new Claim(ClaimTypes.Name, cliente.Nome),
-                    new Claim(ClaimTypes.Email, cliente.Email ?? cliente.Telefone)
-                };
+                    TempData["LoginError"] = "Por favor, insira um telefone ou email válido.";
+                    return View();
+                }
 
-                // Criar a identidade e o principal
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                var authProperties = new AuthenticationProperties
+                var cliente = await _clienteRepository.GetByEmailOrPhoneAsync(userInput);
+
+                if (cliente != null)
                 {
-                    IsPersistent = true // Define o cookie de autenticação como persistente
-                };
+                    var claims = new List<Claim>
+                    {
+                        new Claim(ClaimTypes.NameIdentifier, cliente.ClienteId.ToString()),
+                        new Claim(ClaimTypes.Name, cliente.Nome),
+                        new Claim(ClaimTypes.Email, cliente.Email ?? cliente.Telefone)
+                    };
 
-                // Autenticar o usuário
-                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    var authProperties = new AuthenticationProperties
+                    {
+                        IsPersistent = true
+                    };
 
-                // Redireciona para a tela de escolha (histórico ou novo agendamento)
-                return RedirectToAction("MenuPrincipal", "Cliente");
+                    // Tenta autenticar o usuário
+                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                    return RedirectToAction("MenuPrincipal", "Cliente");
+                }
+                else
+                {
+                    TempData["LoginError"] = "Cliente não encontrado. Revise a informação e tente novamente.";
+                    return View();
+                }
             }
-            else
+            catch (Exception ex)
             {
-                // Cliente não encontrado
-                ModelState.AddModelError("", "Cliente não encontrado.");
-                return View(); // Retorna à view de login em caso de erro
+                // Captura qualquer exceção, como erros de banco de dados
+                TempData["LoginError"] = "Ocorreu um erro ao tentar fazer login. Por favor, tente novamente mais tarde.";
+                // Aqui, opcionalmente, você pode logar o erro usando algum sistema de logging
+                // ex: _logger.LogError(ex, "Erro ao tentar fazer login");
+                // TempData["LoginError"] = ex.Message; // Para mostrar o erro exato durante o desenvolvimento
+                return View();
             }
         }
 
-        // Realiza o logout e remove a sessão de autenticação
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            return RedirectToAction("Login");
+            try
+            {
+                // Tenta fazer o logout
+                await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+                return RedirectToAction("Login");
+            }
+            catch (Exception ex)
+            {
+                // Em caso de erro, redireciona para a página de login com uma mensagem de erro
+                TempData["LoginError"] = "Ocorreu um erro ao tentar realizar o logout. Por favor, tente novamente.";
+                return RedirectToAction("Login");
+            }
         }
     }
 }
