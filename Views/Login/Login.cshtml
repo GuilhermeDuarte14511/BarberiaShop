@@ -1,0 +1,35 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<div class="container mt-5" id="loginPage">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card bg-dark text-light p-4" id="loginCard">
+                <h3 class="text-center text-danger mb-4" id="loginTitle">Bem-vindo à Barbearia Neris</h3>
+                <p class="text-center" id="loginInstruction">Por favor, insira seu telefone ou e-mail:</p>
+                <form id="loginForm" action="/Login/Login" method="post">
+                    <div class="form-group mb-4" id="phoneInputContainer">
+                        <input type="text" id="phoneInput" name="phoneInput" class="form-control text-center" placeholder="Telefone" />
+                    </div>
+                    <div class="form-group mb-4" id="emailInputContainer">
+                        <input type="text" id="emailInput" name="emailInput" class="form-control text-center" placeholder="E-mail" />
+                        <div id="emailAutocomplete" class="autocomplete-box"></div>
+                    </div>
+                    <div id="errorMessage" class="text-danger mt-2" style="display:none;">Por favor, insira um e-mail ou telefone válido.</div>
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-danger btn-block" id="submitButton">Avançar</button>
+                    </div>
+
+                    <!-- Spinner de carregamento -->
+                    <div id="loadingSpinner" class="text-center mt-3" style="display:none;">
+                        <div class="spinner-border text-danger" role="status">
+                            <span class="sr-only">Carregando...</span>
+                        </div>
+                        <p class="mt-2">Carregando...</p>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
