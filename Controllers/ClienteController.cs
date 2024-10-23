@@ -17,20 +17,21 @@ namespace BarberShopMVC.Controllers
         private readonly IServicoRepository _servicoRepository;
         private readonly IAgendamentoService _agendamentoService; // Serviço de agendamento
         private readonly IBarbeiroService _barbeiroService; // Serviço de barbeiros
-        private readonly IRabbitMQService _rabbitMQService; // RabbitMQ para envio de emails
+        // private readonly IRabbitMQService _rabbitMQService; // RabbitMQ para envio de emails (Comentado)
 
         public ClienteController(
             IClienteService clienteService,
             IServicoRepository servicoRepository,
             IAgendamentoService agendamentoService,
-            IBarbeiroService barbeiroService,
-            IRabbitMQService rabbitMQService) // Adicionado RabbitMQService
+            IBarbeiroService barbeiroService
+        // IRabbitMQService rabbitMQService // Adicionado RabbitMQService (Comentado)
+        )
         {
             _clienteService = clienteService;
             _servicoRepository = servicoRepository;
             _agendamentoService = agendamentoService;
             _barbeiroService = barbeiroService;
-            _rabbitMQService = rabbitMQService;
+            // _rabbitMQService = rabbitMQService; (Comentado)
         }
 
         public IActionResult MenuPrincipal()
@@ -104,7 +105,6 @@ namespace BarberShopMVC.Controllers
             return View("ResumoAgendamento", resumoAgendamentoDTO);
         }
 
-
         [HttpPost]
         public async Task<IActionResult> ConfirmarAgendamento(int barbeiroId, DateTime dataHora, string servicoIds)
         {
@@ -124,7 +124,8 @@ namespace BarberShopMVC.Controllers
                 // Cria o agendamento e retorna o ID do agendamento recém-criado, passando o clienteId
                 var agendamentoId = await _agendamentoService.CriarAgendamentoAsync(barbeiroId, dataHora, clienteId, servicoIdList);
 
-                // Preparar mensagem para envio de e-mail via RabbitMQ
+                // Código relacionado ao RabbitMQ comentado
+                /*
                 var agendamentoMessage = new
                 {
                     ClienteId = clienteId,
@@ -139,9 +140,10 @@ namespace BarberShopMVC.Controllers
 
                 // Enviar mensagem para a fila do RabbitMQ
                 _rabbitMQService.EnviarParaFila(mensagemJson);
+                */
 
                 // Exibir uma mensagem de confirmação e redirecionar para o menu principal
-                TempData["MensagemSucesso"] = "Agendamento confirmado com sucesso! Um e-mail foi enviado para você.";
+                TempData["MensagemSucesso"] = "Agendamento confirmado com sucesso!";
             }
             catch (Exception ex)
             {
@@ -153,9 +155,6 @@ namespace BarberShopMVC.Controllers
 
             return RedirectToAction("MenuPrincipal");
         }
-
-
-
 
         // Exibe todos os clientes
         public async Task<IActionResult> Index()

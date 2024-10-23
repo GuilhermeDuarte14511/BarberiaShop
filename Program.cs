@@ -19,10 +19,10 @@ builder.Services.AddDbContext<BarbeariaContext>(options =>
 builder.Services.AddScoped<IEmailService, EmailService>(provider =>
     new EmailService(builder.Configuration["SendGridApiKey"])); // SendGrid API Key do appsettings.json
 
-// Serviço RabbitMQ
-builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>(provider =>
+// Serviço RabbitMQ (Comentado porque você não irá usar agora)
+/*builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>(provider =>
     new RabbitMQService(builder.Configuration["SendGridApiKey"], provider));
-
+*/
 
 // Registrar repositórios
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -69,8 +69,10 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Login}/{action=Login}/{id?}");
 
-// Inicializa o consumidor RabbitMQ ao iniciar o aplicativo
+// Inicializa o consumidor RabbitMQ ao iniciar o aplicativo (Comentado)
+/*
 var rabbitMQService = app.Services.GetRequiredService<IRabbitMQService>();
 Task.Run(() => rabbitMQService.IniciarConsumo());
+*/
 
 app.Run();
