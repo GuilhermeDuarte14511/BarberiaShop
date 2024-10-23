@@ -1,11 +1,11 @@
 using BarberShop.Infrastructure.Data;
-using BarberShop.Infrastructure.Services;
 using BarberShop.Infrastructure.Repositories;
 using BarberShop.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using BarberShop.Domain.Entities;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using BarberShop.Application.Services;
+using BarberShop.Application.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -14,11 +14,15 @@ builder.Services.AddDbContext<BarbeariaContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("BarberShopDb")));
 
 // Registrar serviços no contêiner de injeção de dependências
+
+// Serviço de Email com SendGrid
 builder.Services.AddScoped<IEmailService, EmailService>(provider =>
     new EmailService(builder.Configuration["SendGridApiKey"])); // SendGrid API Key do appsettings.json
 
-builder.Services.AddScoped<IMessageQueueService, RabbitMQService>(provider =>
-    new RabbitMQService("localhost", provider.GetRequiredService<IEmailService>())); // Ajuste o host do RabbitMQ se necessário
+// Serviço RabbitMQ
+builder.Services.AddSingleton<IRabbitMQService, RabbitMQService>(provider =>
+    new RabbitMQService(builder.Configuration["SendGridApiKey"], provider));
+
 
 // Registrar repositórios
 builder.Services.AddScoped<IClienteRepository, ClienteRepository>();
@@ -64,5 +68,9 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Login}/{action=Login}/{id?}");
+
+// Inicializa o consumidor RabbitMQ ao iniciar o aplicativo
+var rabbitMQService = app.Services.GetRequiredService<IRabbitMQService>();
+Task.Run(() => rabbitMQService.IniciarConsumo());
 
 app.Run();

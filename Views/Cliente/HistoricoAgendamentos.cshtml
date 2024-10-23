@@ -2,62 +2,64 @@
 
 <h2 class="text-light">Histórico de Agendamentos</h2>
 
-<div class="table-responsive">
-    <table class="table table-bordered table-dark table-striped table-hover">
-        <thead class="text-center">
-            <tr>
-                <th>Data e Hora</th>
-                <th>Barbeiro</th>
-                <th>Serviços</th>
-                <th>Valor Total</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var agendamento in Model)
-            {
+<div class="container-fluid">
+    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+        <table class="table table-bordered table-dark table-striped table-hover table-sm">
+            <thead class="text-center">
                 <tr>
-                    <td>@agendamento.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
-                    <td>@agendamento.Barbeiro.Nome</td>
-                    <td>
-                        <ul class="list-unstyled">
-                            @foreach (var servico in agendamento.AgendamentoServicos)
-                            {
-                                <li>@servico.Servico.Nome - @servico.Servico.Preco.ToString("C")</li>
-                            }
-                        </ul>
-                    </td>
-                    <td>@agendamento.AgendamentoServicos.Sum(s => s.Servico.Preco).ToString("C")</td>
-                    <td>
-                        @if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Pendente)
-                        {
-                            <span data-bs-toggle="tooltip" title="Pendente">
-                                <i class="fas fa-clock text-warning"></i>
-                            </span>
-                        }
-                        else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Confirmado)
-                        {
-                            <span data-bs-toggle="tooltip" title="Confirmado">
-                                <i class="fas fa-check text-success"></i>
-                            </span>
-                        }
-                        else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Cancelado)
-                        {
-                            <span data-bs-toggle="tooltip" title="Cancelado">
-                                <i class="fas fa-times text-danger"></i>
-                            </span>
-                        }
-                        else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Concluido)
-                        {
-                            <span data-bs-toggle="tooltip" title="Concluído">
-                                <i class="fas fa-check-circle text-info"></i>
-                            </span>
-                        }
-                    </td>
+                    <th>Data e Hora</th>
+                    <th>Barbeiro</th>
+                    <th>Serviços</th>
+                    <th>Valor Total</th>
+                    <th>Status</th>
                 </tr>
-            }
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                @foreach (var agendamento in Model)
+                {
+                    <tr>
+                        <td class="align-middle text-center">@agendamento.DataHora.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="align-middle text-center">@agendamento.Barbeiro.Nome</td>
+                        <td class="align-middle">
+                            <ul class="list-unstyled">
+                                @foreach (var servico in agendamento.AgendamentoServicos)
+                                {
+                                    <li>@servico.Servico.Nome - @servico.Servico.Preco.ToString("C")</li>
+                                }
+                            </ul>
+                        </td>
+                        <td class="align-middle text-center">@agendamento.AgendamentoServicos.Sum(s => s.Servico.Preco).ToString("C")</td>
+                        <td class="align-middle text-center">
+                            @if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Pendente)
+                            {
+                                <span data-bs-toggle="tooltip" title="Pendente">
+                                    <i class="fas fa-clock text-warning"></i>
+                                </span>
+                            }
+                            else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Confirmado)
+                            {
+                                <span data-bs-toggle="tooltip" title="Confirmado">
+                                    <i class="fas fa-check text-success"></i>
+                                </span>
+                            }
+                            else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Cancelado)
+                            {
+                                <span data-bs-toggle="tooltip" title="Cancelado">
+                                    <i class="fas fa-times text-danger"></i>
+                                </span>
+                            }
+                            else if (agendamento.Status == BarberShop.Domain.Entities.StatusAgendamento.Concluido)
+                            {
+                                <span data-bs-toggle="tooltip" title="Concluído">
+                                    <i class="fas fa-check-circle text-info"></i>
+                                </span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
 </div>
 
 <!-- Legenda para os ícones -->

@@ -89,9 +89,9 @@
 
     // Lógica para a página de Solicitar Serviço
     if ($('#solicitarServicoPage').length > 0) {
-        var servicosSelecionados = JSON.parse(localStorage.getItem('servicosSelecionados')) || [];
-        var valorTotal = servicosSelecionados.reduce((total, servico) => total + parseFloat(servico.preco), 0);
-        var duracaoTotal = servicosSelecionados.reduce((total, servico) => total + parseInt(servico.duracao), 0); // Nova lógica para duração
+        var servicosSelecionados = [];
+        var valorTotal = 0;
+        var duracaoTotal = 0;
 
         window.adicionarServico = function (id, nome, preco, duracao, element) {
             var index = servicosSelecionados.findIndex(servico => servico.id === id);
@@ -104,8 +104,6 @@
             }
 
             atualizarListaServicosSelecionados();
-            localStorage.setItem('servicosSelecionados', JSON.stringify(servicosSelecionados));
-            localStorage.setItem('duracaoTotalServicos', duracaoTotal); // Salva duração total
         };
 
         window.removerServico = function (index, id) {
@@ -115,8 +113,6 @@
 
             $('#servico-' + id).prop('disabled', false);
             atualizarListaServicosSelecionados();
-            localStorage.setItem('servicosSelecionados', JSON.stringify(servicosSelecionados));
-            localStorage.setItem('duracaoTotalServicos', duracaoTotal); // Atualiza duração total
         };
 
         function atualizarListaServicosSelecionados() {
@@ -141,10 +137,13 @@
                 return;
             }
 
+            var servicoIds = servicosSelecionados.map(s => s.id); // Coletar os IDs dos serviços selecionados
+
             $('#loadingSpinner').fadeIn();
             setTimeout(function () {
                 $('#loadingSpinner').fadeOut();
-                window.location.href = "/Cliente/EscolherBarbeiro";
+                // Redirecionar para a escolha do barbeiro com duracaoTotal e servicoIds
+                window.location.href = `/Cliente/EscolherBarbeiro?duracaoTotal=${duracaoTotal}&servicoIds=${servicoIds.join(',')}`;
             }, 2000);
         };
 
@@ -155,72 +154,111 @@
     if ($('#escolherBarbeiroPage').length > 0) {
         $('.barbeiro-btn').on('click', function () {
             var barbeiroId = $(this).data('barbeiro-id');
-            var duracaoTotal = localStorage.getItem('duracaoTotalServicos');
+            var duracaoTotal = $(this).data('duracao-total');
+            var servicoIds = $(this).data('servico-ids'); // Capturar os IDs dos serviços selecionados
+
+            if (!duracaoTotal || duracaoTotal <= 0) {
+                alert("Nenhum serviço selecionado ou duração inválida.");
+                return;
+            }
 
             $('#calendarioModal').modal('show');
-            carregarCalendario(barbeiroId, duracaoTotal);
+            carregarHorariosDropdown(barbeiroId, duracaoTotal);
         });
 
-        function carregarCalendario(barbeiroId, duracaoTotal) {
-            const container = document.getElementById('calendario');
-            const calendar = new tui.Calendar(container, {
-                defaultView: 'week',
-                taskView: false,
-                scheduleView: ['time'],
-                useCreationPopup: true,
-                useDetailPopup: true,
-                week: {
-                    startDayOfWeek: 0, // Começa no Domingo
-                    dayNames: ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'], // Dias em português
-                    hourStart: 9, // Hora de início
-                    hourEnd: 18, // Hora de término
-                    timeFormat: 'HH:mm', // Formato de 24 horas
-                },
-                theme: {
-                    'week.timegridSchedule.backgroundColor': '#28a745',  // Cor verde para horários disponíveis
-                    'week.timegridSchedule.borderColor': '#28a745',     // Borda verde
-                    'week.timegridSchedule.color': '#000',              // Texto preto para melhor contraste
-                    'week.scheduleView.headerFontWeight': 'bold'        // Negrito
-                }
-            });
-
-            // Carregar os horários disponíveis via AJAX
+        function carregarHorariosDropdown(barbeiroId, duracaoTotal) {
+            $('#loadingSpinner').fadeIn();
             $.ajax({
                 url: '/Cliente/ObterHorariosDisponiveis',
                 data: {
                     barbeiroId: barbeiroId,
-                    duracaoTotal: duracaoTotal // Duração total dos serviços selecionados
+                    duracaoTotal: duracaoTotal
                 },
                 success: function (data) {
-                    var eventos = data.map(function (evento) {
-                        var startTime = dayjs(evento).format('DD/MM/YYYY HH:mm');  // Formato BR
-                        var endTime = dayjs(evento).add(duracaoTotal, 'minute').format('HH:mm');
+                    var select = $('#horariosDisponiveis');
+                    select.empty();
+                    select.append('<option value="">Escolha um horário...</option>');
 
-                        return {
-                            id: evento.id,
-                            calendarId: '1',
-                            title: `Disponível`,
-                            category: 'time',
-                            start: evento,
-                            end: dayjs(evento).add(duracaoTotal, 'minute').toISOString(),  // Adiciona duração ao fim
-                            isReadOnly: true,
-                            bgColor: '#28a745',        // Cor de fundo verde
-                            borderColor: '#28a745',    // Cor da borda verde
-                            color: '#000',             // Texto preto para contraste
-                            customStyle: { fontWeight: 'bold' }  // Negrito no evento
-                        };
+                    data.forEach(function (horario) {
+                        var diaSemana = dayjs(horario).format('dddd');
+                        var dataFormatada = dayjs(horario).format('DD/MM');
+                        var horarioFormatado = dayjs(horario).format('HH:mm') + ' - ' + dayjs(horario).add(duracaoTotal, 'minute').format('HH:mm');
+
+                        var optionText = `${diaSemana} (${dataFormatada}) - ${horarioFormatado}`;
+                        select.append(`<option value="${horario}">${optionText}</option>`);
                     });
-                    calendar.createSchedules(eventos);  // Cria os eventos no calendário
+
+                    $('#loadingSpinner').fadeOut();
                 },
                 error: function () {
                     alert('Erro ao carregar os horários.');
+                    $('#loadingSpinner').fadeOut();
                 }
             });
-
-            // Limpa o calendário quando o modal for fechado
-            $('#calendarioModal').on('hidden.bs.modal', function () {
-                calendar.clear(); // Limpa o calendário para evitar duplicação
-            });
         }
+
+        // Confirmar o horário e redirecionar para a tela de resumo do agendamento
+        $('#confirmarHorarioBtn').on('click', function () {
+            var horarioSelecionado = $('#horariosDisponiveis').val();
+            var barbeiroId = $('.barbeiro-btn').data('barbeiro-id');
+            var servicoIds = $('#escolherBarbeiroPage').data('servico-ids'); // Recuperando os IDs dos serviços
+
+            if (!horarioSelecionado) {
+                alert('Por favor, selecione um horário.');
+            } else {
+                $('#loadingSpinner').fadeIn();
+                setTimeout(function () {
+                    $('#loadingSpinner').fadeOut();
+                    var dataHora = new Date(horarioSelecionado);
+                    // Redirecionar para a página de resumo com os parâmetros necessários
+                    window.location.href = `/Cliente/ResumoAgendamento?barbeiroId=${barbeiroId}&dataHora=${encodeURIComponent(dataHora.toISOString())}&servicoIds=${servicoIds}`;
+                }, 2000);
+            }
+        });
+    }
+
+    // Lógica do resumo de agendamento
+    if ($('#resumoAgendamentoPage').length > 0) {
+        $('#confirmarAgendamentoBtn').on('click', function () {
+            var barbeiroId = $('#resumoAgendamentoPage').data('barbeiro-id');
+            var servicoIdsString = $('#resumoAgendamentoPage').data('servico-ids');
+            var dataHora = $('#resumoAgendamentoPage').data('data-hora');
+
+            // Converter a string '1,2,3' para um array [1, 2, 3]
+            var servicoIds = servicoIdsString.split(',').map(function (id) {
+                return parseInt(id, 10); // Convertendo cada ID para número
+            });
+
+            // Exibe o spinner de carregamento
+            $('#loadingSpinner').fadeIn();
+
+            // Simula a chamada ao servidor ou processo de confirmação
+            setTimeout(function () {
+                $('#loadingSpinner').fadeOut();
+
+                // Enviar o agendamento via AJAX para o backend
+                $.ajax({
+                    type: 'POST',
+                    url: '/Cliente/ConfirmarAgendamento',
+                    data: {
+                        barbeiroId: barbeiroId,
+                        servicoIds: servicoIds.join(','), // Enviar como string separada por vírgulas
+                        dataHora: dataHora
+                    },
+                    success: function () {
+                        // Exibe o modal de sucesso
+                        $('#successModal').modal('show');
+                    },
+                    error: function () {
+                        alert('Erro ao confirmar o agendamento.');
+                    }
+                });
+            }, 2000);
+        });
+
+        // Redirecionar para o menu principal ao clicar em "OK"
+        $('#redirectMenuBtn').on('click', function () {
+            window.location.href = '/Cliente/MenuPrincipal';
+        });
     }
 });
